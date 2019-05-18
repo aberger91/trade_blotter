@@ -1,20 +1,19 @@
 import unittest
 import logging
 import datetime as dt
-
 from blotter import Blotter, Fill, DIRECTIONS
 
 logger = logging.getLogger("blotter.log")
 
-
-def initialize_from_csvstr(fill_str):
+def initialize_from_csvstr(string):
     '''
-    1,ZCN19,3.7025,1
-    2,ZCN19,3.705,-1
+    Example:
+        1,ZCN19,3.7025,1
+        2,ZCN19,3.705,-1
     '''
     fills = list(map(lambda x: 
                 Fill.create_from_attrs(*x.split(',')), 
-                fill_str.strip('\n').split('\n')
+                string.strip('\n').split('\n')
             ))
     for f in fills:
         print(f)
@@ -25,14 +24,14 @@ def initialize_from_csvstr(fill_str):
 
 
 class TestBlotter(unittest.TestCase):
-    def annot(f):
+    def annotate(f):
         def wrap(*args, **kwargs):
             print(f'{f.__name__.upper()}')
             print('=='*36)
             f(*args, **kwargs)
         return wrap
 
-    @annot
+    @annotate
     def test_single_buy_positive_pnl(self):
         f = '1,ZCN19,3.7025,1 \n\
 2,ZCN19,3.705,-1'
@@ -41,7 +40,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
-    @annot
+    @annotate
     def test_single_buy_negative_pnl(self):
         f = '1,ZCN19,3.705,1 \n\
 2,ZCN19,3.7025,-1'
@@ -50,7 +49,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
-    @annot
+    @annotate
     def test_single_sell_positive_pnl(self):
         f = '1,ZCN19,3.705,-1 \n\
 2,ZCN19,3.7025,1'
@@ -59,7 +58,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
-    @annot
+    @annotate
     def test_single_sell_negative_pnl(self):
         f = '1,ZCN19,3.7025,-1 \n\
 2,ZCN19,3.705,1'
@@ -68,7 +67,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
-    @annot
+    @annotate
     def test_net_direction_zero_open_positions_zero_pnl(self):
         f = '1,ZCN19,3.7025,1 \n\
 2,ZCN19,3.705,-1 \n\
@@ -83,7 +82,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
-    @annot
+    @annotate
     def test_direction_change_fromlong(self):
         f = '1,ZCN19,3.7025,1 \n\
 4,ZCN19,3.705,-2'
@@ -92,7 +91,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == -1)
         assert(manager.net_direction == DIRECTIONS.SHORT)
 
-    @annot
+    @annotate
     def test_direction_change_fromshort(self):
         f = '1,ZCN19,3.705,-1 \n\
 4,ZCN19,3.7025,2'
@@ -101,7 +100,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == 1)
         assert(manager.net_direction == DIRECTIONS.LONG)
 
-    @annot
+    @annotate
     def test_direction_change_extended(self):
         f = '1,ZCN19,3.7025,1 \n\
 2,ZCN19,3.7025,-2 \n\
@@ -114,7 +113,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == 3)
         assert(manager.net_direction == DIRECTIONS.LONG)
 
-    @annot
+    @annotate
     def test_fifo_open_position_longs(self):
         f = '1,ZCN19,3.7025,5 \n\
 2,ZCN19,3.705,-1 \n\
@@ -132,7 +131,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == 6)
         assert(manager.net_direction == DIRECTIONS.LONG)
 
-    @annot
+    @annotate
     def test_fifo_open_positions_shorts(self):
         f = '1,ZCN19,3.7025,-5 \n\
 2,ZCN19,3.705,1 \n\
@@ -150,7 +149,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == -6)
         assert(manager.net_direction == DIRECTIONS.SHORT)
 
-    @annot
+    @annotate
     def test_fifo_pnl_extended(self):
         f = '1,ZCN19,3.70,1 \n\
 2,ZCN19,3.7025,1 \n\
@@ -177,7 +176,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == -9)
         assert(manager.net_direction == DIRECTIONS.SHORT)
 
-    @annot
+    @annotate
     def test_new_error(self):
         f = '1,ZCN19,4.005,1 \n\
 4,ZCN19,4.0025,-2 \n\
@@ -189,7 +188,7 @@ class TestBlotter(unittest.TestCase):
         #assert(manager.net_position == -9)
         #assert(manager.net_direction == DIRECTIONS.SHORT)
 
-    @annot
+    @annotate
     def test_new_error_inverse(self):
         f = '1,ZCN19,4.005,-1 \n\
 4,ZCN19,4.0025,2 \n\

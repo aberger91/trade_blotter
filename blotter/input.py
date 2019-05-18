@@ -1,6 +1,7 @@
+import re
+
 from .fill import Fill, _Fill
 from .blot import Blotter
-import re
 
 
 def validate_float(string, default=None):
@@ -9,10 +10,12 @@ def validate_float(string, default=None):
     return float(string)
 
 def consume():
+    blotters = {}
+
     buys = ['B', 'b', 'buy', 'Buy', 'BUY']
     sells = ['S', 's', 'sell', 'Sell', 'SELL']
     actions = buys + sells
-    blotters = {}
+
     order_id = 0
     print(f'> Side OrderFilled ExchangeTicker PriceLevel ')
     while True:
@@ -29,17 +32,18 @@ def consume():
 
             if side in sells:
                 quantity *= -1
-            f = Fill.create_from_attrs(order_id, ticker, price, quantity)
 
+            f = Fill.create_from_attrs(order_id, ticker, price, quantity)
             if not blotters.get(f.ExchangeTicker):
                 print(f'> New {f.ExchangeTicker} Blotter ') 
-                contract_multiplier = validate_float(input('> Enter ContractMultiplier (1): '), default=1)
-                tick_value = validate_float(input('> Enter TickValue (12.5): '), default=12.5)
-                tick_size = validate_float(input('> Enter TickSize (0.0025): '), default=0.0025)
-                blotters[f.ExchangeTicker] = Blotter(f.ExchangeTicker,
-                                                     contract_multiplier=contract_multiplier,
-                                                     tick_value=tick_value,
-                                                     tick_size=tick_size)
+                defaults = {'contract_multiplier': 1, 'tick_value': 12.5, 'tick_size': 0.0025}
+                kwargs = defaults.copy()
+                for k,v in defaults.items():
+                    tokens = validate_float(input(f"> Enter {k.upper().replace('_',' ')} ({v}): "), default=v)
+                    kwargs[k] = tokens
+                print(kwargs)
+                print(*kwargs)
+                blotters[f.ExchangeTicker] = Blotter(f.ExchangeTicker, *kwargs)
             blotter = blotters.get(f.ExchangeTicker)
             blotter.add_fill(f)
 
@@ -51,4 +55,3 @@ def consume():
         else:
             print('Unrecognized input.')
 
-    
