@@ -2,9 +2,7 @@ import unittest
 import logging
 import datetime as dt
 
-from .blot import Blotter
-from .fill import Fill
-from .directions import DIRECTIONS
+from blotter import Blotter, Fill, DIRECTIONS
 
 logger = logging.getLogger("blotter.log")
 
@@ -202,8 +200,4 @@ class TestBlotter(unittest.TestCase):
         #assert(round(manager.total_pnl, 2) == pnl)
         #assert(manager.net_position == -9)
         #assert(manager.net_direction == DIRECTIONS.SHORT)
-
-if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestBlotter)
-    testResult = unittest.TextTestRunner(verbosity=2).run(suite)
 

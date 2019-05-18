@@ -7,4 +7,5 @@ setup(
    author='Andrew Berger',
    author_email='aberger91@pm.me',
    packages=['blotter'],
+   test_suite='tests'
 )
