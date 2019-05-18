@@ -1,3 +1,6 @@
 __pycache__
+blotter.egg-info
+build
+dist
 *.swp
 *.swo

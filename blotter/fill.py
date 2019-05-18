@@ -1,4 +1,4 @@
-from directions import DIRECTIONS
+from .directions import DIRECTIONS
 import datetime as dt
 
 class _Fill:

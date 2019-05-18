@@ -2,8 +2,8 @@ import os
 import datetime as dt
 import enum
 
-from fill import Fill
-from directions import DIRECTIONS
+from .fill import Fill
+from .directions import DIRECTIONS
 
 
 class Blotter:

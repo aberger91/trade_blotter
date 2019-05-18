@@ -1,5 +1,5 @@
-from fill import Fill, _Fill
-from blotter import Blotter
+from .fill import Fill, _Fill
+from .blot import Blotter
 import re
 
 
@@ -52,7 +52,3 @@ def consume():
             print('Unrecognized input.')
 
     
-
-if __name__ == '__main__':
-    consume()
-

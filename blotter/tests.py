@@ -2,9 +2,9 @@ import unittest
 import logging
 import datetime as dt
 
-from blotter import Blotter
-from fill import Fill
-from directions import DIRECTIONS
+from .blot import Blotter
+from .fill import Fill
+from .directions import DIRECTIONS
 
 logger = logging.getLogger("blotter.log")
 
