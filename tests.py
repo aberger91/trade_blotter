@@ -1,80 +1,77 @@
 import unittest
-from pnl import *
+import logging
+import datetime as dt
 
-class FakeFill:
-    def __init__(self, orderid, ticker, pricelevel, orderfilled):
-        self.OrderID = orderid
-        self.ExchangeTicker = ticker
-        self.PriceLevel = float(pricelevel)
-        self.OrderFilled = int(orderfilled)
-        self.TransactionTime = dt.datetime.now()
+from blotter import Blotter
+from fill import Fill
+from directions import DIRECTIONS
+
+logger = logging.getLogger("blotter.log")
 
 
-def execute(fill_str):
-    fills = fill_str.strip('\n').split('\n')
-    _init_fill = FakeFill(*fills[0].split(','))
-    trade = Fill(_init_fill)
-
-    manager = Blotter(_init_fill.ExchangeTicker, trade)
-    print(manager)
-    manager.update(trade)
-    print(manager)
-    print()
-
-    for f in fills[1:]:
-        _fill = Fill(FakeFill(*f.split(',')))
-        manager.add_fill(_fill)
-        print(f'\t{_fill}')
-        manager.update(_fill)
-        print(manager)
-        print()
-    return manager
+def initialize_from_csvstr(fill_str):
+    '''
+    1,ZCN19,3.7025,1
+    2,ZCN19,3.705,-1
+    '''
+    fills = list(map(lambda x: 
+                Fill.create_from_attrs(*x.split(',')), 
+                fill_str.strip('\n').split('\n')
+            ))
+    for f in fills:
+        print(f)
+    print('=='*36)
+    blotter = Blotter(fills[0].ExchangeTicker)
+    blotter.initialize_from_list(fills)
+    return blotter
 
 
 class TestBlotter(unittest.TestCase):
-    def test_single(self):
+    def annot(f):
+        def wrap(*args, **kwargs):
+            print(f'{f.__name__.upper()}')
+            print('=='*36)
+            f(*args, **kwargs)
+        return wrap
+
+    @annot
+    def test_single_buy_positive_pnl(self):
         f = '1,ZCN19,3.7025,1 \n\
 2,ZCN19,3.705,-1'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
         assert(round(manager.total_pnl, 2) == 12.5)
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
-    def test_single2(self):
+    @annot
+    def test_single_buy_negative_pnl(self):
         f = '1,ZCN19,3.705,1 \n\
 2,ZCN19,3.7025,-1'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
         assert(round(manager.total_pnl, 2) == -12.5)
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
-    def test_single_sell(self):
+    @annot
+    def test_single_sell_positive_pnl(self):
         f = '1,ZCN19,3.705,-1 \n\
 2,ZCN19,3.7025,1'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
         assert(round(manager.total_pnl, 2) == 12.5)
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
-    def test_single_sell2(self):
+    @annot
+    def test_single_sell_negative_pnl(self):
         f = '1,ZCN19,3.7025,-1 \n\
 2,ZCN19,3.705,1'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
         assert(round(manager.total_pnl, 2) == -12.5)
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
-    def test_double(self):
-        f = '1,ZCN19,3.7025,1 \n\
-2,ZCN19,3.705,-1 \n\
-3,ZCN19,3.7025,-1 \n\
-4,ZCN19,3.705,1'
-        manager = execute(f)
-        assert(round(manager.total_pnl, 2) == 0)
-        assert(manager.net_position == 0)
-        assert(manager.net_direction == DIRECTIONS.FLAT)
-
-    def test_flat_zero_pnl(self):
+    @annot
+    def test_net_direction_zero_open_positions_zero_pnl(self):
         f = '1,ZCN19,3.7025,1 \n\
 2,ZCN19,3.705,-1 \n\
 4,ZCN19,3.7025,1 \n\
@@ -83,40 +80,44 @@ class TestBlotter(unittest.TestCase):
 7,ZCN19,3.705,1 \n\
 8,ZCN19,3.7025,-1 \n\
 9,ZCN19,3.705,1'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
         assert(round(manager.total_pnl, 2) == 0)
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
-    def test_direction_change(self):
+    @annot
+    def test_direction_change_fromlong(self):
         f = '1,ZCN19,3.7025,1 \n\
 4,ZCN19,3.705,-2'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
         assert(round(manager.total_pnl, 2) == 12.5)
         assert(manager.net_position == -1)
         assert(manager.net_direction == DIRECTIONS.SHORT)
 
-    def test_direction_change2(self):
+    @annot
+    def test_direction_change_fromshort(self):
         f = '1,ZCN19,3.705,-1 \n\
 4,ZCN19,3.7025,2'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
         assert(round(manager.total_pnl, 2) == 12.5)
         assert(manager.net_position == 1)
         assert(manager.net_direction == DIRECTIONS.LONG)
 
-    def test_direction_change3(self):
+    @annot
+    def test_direction_change_extended(self):
         f = '1,ZCN19,3.7025,1 \n\
 2,ZCN19,3.7025,-2 \n\
 3,ZCN19,3.7125,3 \n\
 4,ZCN19,3.7025,-4 \n\
 5,ZCN19,3.7075,5'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
         pnl = 0 - 50 - 50*2 - 25*2
         assert(round(manager.total_pnl, 2) == pnl)
         assert(manager.net_position == 3)
         assert(manager.net_direction == DIRECTIONS.LONG)
 
-    def test_fifo_open_positions(self):
+    @annot
+    def test_fifo_open_position_longs(self):
         f = '1,ZCN19,3.7025,5 \n\
 2,ZCN19,3.705,-1 \n\
 4,ZCN19,3.7025,1 \n\
@@ -125,7 +126,7 @@ class TestBlotter(unittest.TestCase):
 7,ZCN19,3.705,3 \n\
 8,ZCN19,3.7025,-2 \n\
 9,ZCN19,3.705,1'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
         pnl = 12.5 + 25 + 0
         opens = manager.get_open_positions()
         assert(round(manager.total_pnl, 2) == pnl)
@@ -133,7 +134,8 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == 6)
         assert(manager.net_direction == DIRECTIONS.LONG)
 
-    def test_fifo_open_positions2(self):
+    @annot
+    def test_fifo_open_positions_shorts(self):
         f = '1,ZCN19,3.7025,-5 \n\
 2,ZCN19,3.705,1 \n\
 4,ZCN19,3.7025,-1 \n\
@@ -142,7 +144,7 @@ class TestBlotter(unittest.TestCase):
 7,ZCN19,3.705,-3 \n\
 8,ZCN19,3.7025,2 \n\
 9,ZCN19,3.705,-1'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
         pnl = -12.5 - 25 + 0
         opens = manager.get_open_positions()
         assert(round(manager.total_pnl, 2) == pnl)
@@ -150,7 +152,8 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_position == -6)
         assert(manager.net_direction == DIRECTIONS.SHORT)
 
-    def test_no_errors(self):
+    @annot
+    def test_fifo_pnl_extended(self):
         f = '1,ZCN19,3.70,1 \n\
 2,ZCN19,3.7025,1 \n\
 2,ZCN19,3.705,1 \n\
@@ -168,7 +171,39 @@ class TestBlotter(unittest.TestCase):
 14,ZCN19,3.7075,1 \n\
 15,ZCN19,3.7025,10 \n\
 16,ZCN19,3.705,-25'
-        manager = execute(f)
+        manager = initialize_from_csvstr(f)
+        pnl = 37.5 + 25 + 12.5 + 0 - \
+              12.5 - 25 + 12.5 + 25 + 25 + \
+              0 + 12.5 + 25 + 25 + 0 - 12.5 + 125
+        assert(round(manager.total_pnl, 2) == pnl)
+        assert(manager.net_position == -9)
+        assert(manager.net_direction == DIRECTIONS.SHORT)
+
+    @annot
+    def test_new_error(self):
+        f = '1,ZCN19,4.005,1 \n\
+4,ZCN19,4.0025,-2 \n\
+5,ZCN19,4.005,-2 \n\
+6,ZCN19,4.0075,2 \n\
+8,ZCN19,4.0025,1'
+        manager = initialize_from_csvstr(f)
+        #assert(round(manager.total_pnl, 2) == pnl)
+        #assert(manager.net_position == -9)
+        #assert(manager.net_direction == DIRECTIONS.SHORT)
+
+    @annot
+    def test_new_error_inverse(self):
+        f = '1,ZCN19,4.005,-1 \n\
+4,ZCN19,4.0025,2 \n\
+5,ZCN19,4.005,2 \n\
+6,ZCN19,4.0075,-2 \n\
+8,ZCN19,4.0025,-1'
+        manager = initialize_from_csvstr(f)
+        #assert(round(manager.total_pnl, 2) == pnl)
+        #assert(manager.net_position == -9)
+        #assert(manager.net_direction == DIRECTIONS.SHORT)
 
 if __name__ == '__main__':
-    unittest.main()
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestBlotter)
+    testResult = unittest.TextTestRunner(verbosity=2).run(suite)
+
