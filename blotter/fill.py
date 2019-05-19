@@ -1,5 +1,7 @@
-from .directions import DIRECTIONS
 import datetime as dt
+
+from .directions import DIRECTIONS
+from .log import Logger
 
 class _Fill:
     def __init__(self, orderid, ticker, pricelevel, orderfilled):
@@ -28,6 +30,7 @@ class Fill:
         self.Offsets = []
         self.UnrealPnl = 0
         self.RealPnl = 0
+        self.logger = Logger(self.__class__.__name__)
 
     @staticmethod
     def create_from_attrs(*args):
@@ -49,7 +52,7 @@ class Fill:
 
     def __repr__(self):
         direction = 'BUY' if self.Direction.name == DIRECTIONS.LONG.name else 'SELL'
-        return f'+{__class__.__name__.upper()}|' + \
+        return f'>{__class__.__name__.upper()}|' + \
                f"#{self.OrderID}|" + \
                f"{direction}|" + \
                f'{self.OpenQuantity}/{self.OrderFilled}|' + \
@@ -59,27 +62,42 @@ class Fill:
                f'{self.TransactionTime}|'
                #f"{'Booked' if self.Booked else 'Open'}|" + \
 
-    def book_partial(self, pnl, offset):
+    def book(self, pnl, offset):
+        if self.OpenQuantity == offset.OpenQuantity:
+            self._book(pnl, offset)
+            offset._book(pnl, self)
+        elif abs(self.OpenQuantity) - abs(offset.OpenQuantity)  < 0:
+            offset._book_partial(pnl, self)
+            self._book(pnl, offset)
+        else:
+            self._book_partial(pnl, offset)
+            offset._book(pnl, self)
+
+    def _book_partial(self, pnl, offset):
         self.Offsets.append(offset)
         self.BookedPartial = True
-        if abs(offset.OrderFilled) > abs(self.OpenQuantity):
+
+        if abs(offset.OpenQuantity) > abs(self.OpenQuantity):
+            self.logger.warn('Warning: Partial Booking OVERFLOW')
             self.OpenQuantity = 0
-        elif offset.BookedPartial:
-            self.OpenQuantity += offset.OpenQuantity
+
         else:
-            self.OpenQuantity += offset.OrderFilled
+            self.OpenQuantity += offset.OpenQuantity
         self.RealPnl += pnl
-        print(f'\t\tBOOKING_PARTIAL {self}')
+
         # !!!!!!!
         if self.OpenQuantity == 0:
+            self.logger.warn('Warning: Partial Booking OpenQuantity Reset ')
             self.Booked = True
-        #assert(self.OpenQuantity != 0)
 
-    def book(self, pnl, offset):
+        #assert(self.OpenQuantity != 0)
+        self.logger.debug(f'\tBOOKED PARTIAL {self}')
+
+    def _book(self, pnl, offset):
         self.Offsets.append(offset)
         self.Booked = True
         self.BookedPartial = True
         self.OpenQuantity = 0
         self.RealPnl += pnl
-        print(f'\t\tBOOKING {self}')
+        self.logger.debug(f'\tBOOKED {self}')
 

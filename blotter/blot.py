@@ -2,6 +2,7 @@ import os
 import datetime as dt
 import enum
 
+from .log import Logger
 from .fill import Fill
 from .directions import DIRECTIONS
 
@@ -27,8 +28,9 @@ class Blotter:
         self.contract_multiplier = contract_multiplier
         self.tick_value = tick_value
         self.tick_size = tick_size
-        print(self.headers)
-        print(self)
+        self.logger = Logger(self.__class__.__name__)
+        self.logger.debug(self.headers)
+        self.logger.info(self)
 
     @property
     def headers(self):
@@ -63,10 +65,7 @@ class Blotter:
         '''
         fill -> Fill
         '''
-        print(f'{fill}')
         self.update(fill)
-        self.trades.append(fill)
-        print(self)
 
     def get_open_positions(self):
         '''
@@ -106,77 +105,38 @@ class Blotter:
                            (self.net_position + trade.OpenQuantity)
         return _avg_open_price
 
-    def book_trade(self, closing_trade, trade, partial=False):
-        '''
-        book all (or partial) closing_trade against trade
-        closing_trade -> Fill
-        trade -> Fill
-        @returns float
-        '''
-        pnl = self.calc_pnl(closing_trade, trade)
-        if partial:
-            if abs(closing_trade.OpenQuantity) < abs(trade.OpenQuantity): # ??
-                closing_trade.book(pnl, trade)
-            else:
-                closing_trade.book_partial(pnl, trade)
-            trade.book_partial(pnl, closing_trade)
-        else:
-            closing_trade_open_qty = closing_trade.OpenQuantity
-            if not trade.OpenQuantity + closing_trade_open_qty:
-                trade.book(pnl, closing_trade)
-            else:
-                trade.book_partial(pnl, closing_trade)
-            closing_trade.book(pnl, trade)
-        return pnl
-
     def close_existing_positions(self, trade):
         '''
         trade -> Fill
         @returns Blotter
         '''
         closing_trade = self.get_fifo_trade_by_direction(-1*trade.Direction.value)
+        if trade.Booked or not closing_trade:
+            return
 
-        if abs(trade.OpenQuantity) < abs(closing_trade.OpenQuantity):
-            # completely book new trade against existing position
-            pnl = self.book_trade(closing_trade, trade, partial=True)
-            self.realized_pnl += pnl
-        else:
-            pnl = self.book_trade(closing_trade, trade)
-            self.realized_pnl += pnl
+        pnl = self.calc_pnl(closing_trade, trade)
+        self.realized_pnl += pnl
 
-            while abs(trade.OpenQuantity) > 0:
-                closing_trade = self.get_fifo_trade_by_direction(-1*trade.Direction.value)
-                if not closing_trade: 
-                    break
-
-                if abs(trade.OpenQuantity) < abs(closing_trade.OpenQuantity):
-                    pnl = self.book_trade(trade, closing_trade, partial=True)
-                    self.realized_pnl += pnl
-                else:
-                    pnl = self.book_trade(closing_trade, trade)
-                    self.realized_pnl += pnl
-        return self
+        closing_trade.book(pnl, trade)
+        return self.close_existing_positions(trade)
 
     def update(self, trade):
         '''
         trade -> Fill
         @returns Blotter
         '''
-        is_closing_trade = self.net_position and self.net_direction.value and self.net_direction != trade.Direction
-        change_direction = is_closing_trade and abs(self.net_position) < abs(trade.OpenQuantity)
+        trade.logger.info(f'{trade}')
+        is_closing_trade = self.net_position and self.net_direction != trade.Direction
 
         if is_closing_trade:
             self.close_existing_positions(trade)
                                 
         elif self.net_position:
             self.avg_open_price = self.calc_avg_open_price(trade)
-            print(f'\t\tAdding to position {trade} px:{round(self.avg_open_price, 6)}')
-
         else:
             self.avg_open_price = trade.PriceLevel
-            print(f'\t\tInitializing position {trade} px:{round(self.avg_open_price, 6)}')
 
-        if change_direction:
+        if is_closing_trade and abs(self.net_position) < abs(trade.OpenQuantity):
             self.avg_open_price = trade.PriceLevel
 
         self.total_pnl = self.realized_pnl + self.unrealized_pnl
@@ -185,6 +145,8 @@ class Blotter:
         if not self.net_position:
             self.avg_open_price = None
 
+        self.trades.append(trade)
+        self.logger.info(self)
         return self
 
     def update_from_marketdata(self, last_price):
