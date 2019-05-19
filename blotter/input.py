@@ -12,12 +12,14 @@ def validate_float(string, default=None):
 def consume():
     blotters = {}
 
+    defaults = {'contract_multiplier': 1, 'tick_value': 12.5, 'tick_size': 0.0025}
     buys = ['B', 'b', 'buy', 'Buy', 'BUY']
     sells = ['S', 's', 'sell', 'Sell', 'SELL']
     actions = buys + sells
 
     order_id = 0
     print(f'> Side OrderFilled ExchangeTicker PriceLevel ')
+
     while True:
         string = input('> ') 
         tokens = re.split('\s+', string.strip('\n'))
@@ -33,17 +35,16 @@ def consume():
             if side in sells:
                 quantity *= -1
 
+            print(order_id, ticker, price, quantity)
             f = Fill.create_from_attrs(order_id, ticker, price, quantity)
             if not blotters.get(f.ExchangeTicker):
                 print(f'> New {f.ExchangeTicker} Blotter ') 
-                defaults = {'contract_multiplier': 1, 'tick_value': 12.5, 'tick_size': 0.0025}
                 kwargs = defaults.copy()
                 for k,v in defaults.items():
-                    tokens = validate_float(input(f"> Enter {k.upper().replace('_',' ')} ({v}): "), default=v)
+                    tokens = validate_float(input(f"> Enter {k.upper().replace('_',' ')} ({v}): "), 
+                                            default=v)
                     kwargs[k] = tokens
-                print(kwargs)
-                print(*kwargs)
-                blotters[f.ExchangeTicker] = Blotter(f.ExchangeTicker, *kwargs)
+                blotters[f.ExchangeTicker] = Blotter(f.ExchangeTicker, **kwargs)
             blotter = blotters.get(f.ExchangeTicker)
             blotter.add_fill(f)
 

@@ -119,7 +119,7 @@ class Blotter:
                 closing_trade.book(pnl, trade)
             else:
                 closing_trade.book_partial(pnl, trade)
-            trade.book(pnl, closing_trade)
+            trade.book_partial(pnl, closing_trade)
         else:
             closing_trade_open_qty = closing_trade.OpenQuantity
             if not trade.OpenQuantity + closing_trade_open_qty:
@@ -136,24 +136,19 @@ class Blotter:
         '''
         closing_trade = self.get_fifo_trade_by_direction(-1*trade.Direction.value)
 
-        if not closing_trade:
-            print('asdfasdf', self.net_direction, self.net_position, trade.Direction)
-
         if abs(trade.OpenQuantity) < abs(closing_trade.OpenQuantity):
-            remaining = trade.OpenQuantity + closing_trade.OpenQuantity
+            # completely book new trade against existing position
             pnl = self.book_trade(closing_trade, trade, partial=True)
             self.realized_pnl += pnl
-        else: 
-            remaining = trade.OpenQuantity + closing_trade.OpenQuantity
+        else:
             pnl = self.book_trade(closing_trade, trade)
             self.realized_pnl += pnl
 
-            while abs(remaining) > 0:
+            while abs(trade.OpenQuantity) > 0:
                 closing_trade = self.get_fifo_trade_by_direction(-1*trade.Direction.value)
                 if not closing_trade: 
                     break
 
-                remaining = trade.OpenQuantity + closing_trade.OpenQuantity
                 if abs(trade.OpenQuantity) < abs(closing_trade.OpenQuantity):
                     pnl = self.book_trade(trade, closing_trade, partial=True)
                     self.realized_pnl += pnl
@@ -167,11 +162,10 @@ class Blotter:
         trade -> Fill
         @returns Blotter
         '''
-        is_closing_trade = self.net_position and self.net_direction != trade.Direction
+        is_closing_trade = self.net_position and self.net_direction.value and self.net_direction != trade.Direction
         change_direction = is_closing_trade and abs(self.net_position) < abs(trade.OpenQuantity)
 
         if is_closing_trade:
-            print('closing_trade')
             self.close_existing_positions(trade)
                                 
         elif self.net_position:

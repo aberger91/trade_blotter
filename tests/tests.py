@@ -126,6 +126,7 @@ class TestBlotter(unittest.TestCase):
         manager = initialize_from_csvstr(f)
         pnl = 12.5 + 25 + 0
         opens = manager.get_open_positions()
+        print(opens)
         assert(round(manager.total_pnl, 2) == pnl)
         assert([4, 6, 7, 9] == list(map(lambda x: int(x.OrderID), opens)))
         assert(manager.net_position == 6)
@@ -144,6 +145,7 @@ class TestBlotter(unittest.TestCase):
         manager = initialize_from_csvstr(f)
         pnl = -12.5 - 25 + 0
         opens = manager.get_open_positions()
+        print(opens)
         assert(round(manager.total_pnl, 2) == pnl)
         assert([4, 6, 7, 9] == list(map(lambda x: int(x.OrderID), opens)))
         assert(manager.net_position == -6)

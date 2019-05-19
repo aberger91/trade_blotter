@@ -50,8 +50,8 @@ class Fill:
     def __repr__(self):
         direction = 'BUY' if self.Direction.name == DIRECTIONS.LONG.name else 'SELL'
         return f'+{__class__.__name__.upper()}|' + \
-                f"#{self.OrderID}|" + \
-                f"{direction}|" + \
+               f"#{self.OrderID}|" + \
+               f"{direction}|" + \
                f'{self.OpenQuantity}/{self.OrderFilled}|' + \
                f'{self.ExchangeTicker}|' + \
                f'{self.PriceLevel}|' + \
@@ -70,6 +70,7 @@ class Fill:
             self.OpenQuantity += offset.OrderFilled
         self.RealPnl += pnl
         print(f'\t\tBOOKING_PARTIAL {self}')
+        # !!!!!!!
         if self.OpenQuantity == 0:
             self.Booked = True
         #assert(self.OpenQuantity != 0)
