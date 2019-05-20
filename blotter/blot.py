@@ -23,14 +23,17 @@ class Blotter:
         #
         self.trades = []
         self.positions = []
-        #self.add_fill(trade)
         #
         self.contract_multiplier = contract_multiplier
         self.tick_value = tick_value
         self.tick_size = tick_size
-        self.logger = Logger(self.__class__.__name__)
-        self.logger.debug(self.headers)
-        self.logger.info(self)
+        self.logger = self.get_logger()
+
+    def get_logger(self):
+        logger = Logger(self.__class__.__name__)
+        logger.debug(self.headers)
+        logger.info(self)
+        return logger
 
     @property
     def headers(self):
@@ -120,32 +123,32 @@ class Blotter:
         closing_trade.book(pnl, trade)
         return self.close_existing_positions(trade)
 
-    def update(self, trade):
+    def update(self, fill):
         '''
         trade -> Fill
         @returns Blotter
         '''
-        trade.logger.info(f'{trade}')
-        is_closing_trade = self.net_position and self.net_direction != trade.Direction
+        fill.logger.info(f'{fill}')
+        is_closing_trade = self.net_position and self.net_direction != fill.Direction
 
         if is_closing_trade:
-            self.close_existing_positions(trade)
+            self.close_existing_positions(fill)
                                 
         elif self.net_position:
-            self.avg_open_price = self.calc_avg_open_price(trade)
+            self.avg_open_price = self.calc_avg_open_price(fill)
         else:
-            self.avg_open_price = trade.PriceLevel
+            self.avg_open_price = fill.PriceLevel
 
-        if is_closing_trade and abs(self.net_position) < abs(trade.OpenQuantity):
-            self.avg_open_price = trade.PriceLevel
+        if is_closing_trade and abs(self.net_position) < abs(fill.OpenQuantity):
+            self.avg_open_price = fill.PriceLevel
 
         self.total_pnl = self.realized_pnl + self.unrealized_pnl
-        self.net_position += trade.OrderFilled
+        self.net_position += fill.OrderFilled
 
         if not self.net_position:
             self.avg_open_price = None
 
-        self.trades.append(trade)
+        self.trades.append(fill)
         self.logger.info(self)
         return self
 
@@ -158,9 +161,9 @@ class Blotter:
         self.total_pnl = self.realized_pnl + self.unrealized_pnl
         return self
 
-    def initialize_from_list(self, fills:Fill):
+    def initialize_from_list(self, fills:List):
         '''
-        fills -> Fill
+        fills -> List
         @returns Blotter
         '''
         for f in fills:

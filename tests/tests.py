@@ -186,9 +186,10 @@ class TestBlotter(unittest.TestCase):
 6,ZCN19,4.0075,2 \n\
 8,ZCN19,4.0025,1'
         manager = initialize_from_csvstr(f)
-        #assert(round(manager.total_pnl, 2) == pnl)
-        #assert(manager.net_position == -9)
-        #assert(manager.net_direction == DIRECTIONS.SHORT)
+        pnl = -12.5 - 25 - 12.5 + 12.5
+        assert(round(manager.total_pnl, 2) == pnl)
+        assert(manager.net_position == 0)
+        assert(manager.net_direction == DIRECTIONS.FLAT)
 
     @annotate
     def test_new_error_inverse(self):
