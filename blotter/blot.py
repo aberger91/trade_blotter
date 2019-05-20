@@ -161,7 +161,7 @@ class Blotter:
         self.total_pnl = self.realized_pnl + self.unrealized_pnl
         return self
 
-    def initialize_from_list(self, fills:List):
+    def initialize_from_list(self, fills:list):
         '''
         fills -> List
         @returns Blotter
