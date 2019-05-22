@@ -1,11 +1,11 @@
 import os
 import datetime as dt
+import itertools
 import enum
 
 from .log import Logger
 from .fill import Fill
 from .directions import DIRECTIONS
-
 
 class Blotter:
     def __init__(self, 
@@ -68,13 +68,26 @@ class Blotter:
         '''
         fill -> Fill
         '''
+        if fill.ExchangeTicker != self.ticker:
+            msg = f'Warning: attempt to add fill to blotter with incorrect ExchangeTicker ({fill.ExchangeTicker != self.ticker})'
+            self.logger.error(msg)
+            raise ValueError(msg)
         self.update(fill)
 
     def get_open_positions(self):
         '''
         @returns List
         '''
-        return [t for t in self.trades if not t.Booked]
+        positions = {}
+        not_booked = [t for t in self.trades if not t.Booked]
+        for t in not_booked:
+            position = positions.get(t.OrderID)
+            if not position:
+                positions[t.OrderID] = t
+            else:
+                position.OrderFilled += t.OrderFilled
+                position.OpenQuantity += t.OpenQuantity
+        return sorted(positions.values(), key=lambda x: x.TransactionTime)
 
     def get_fifo_trade_by_direction(self, direction):
         '''

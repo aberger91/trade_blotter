@@ -1,15 +1,20 @@
+import random
 import datetime as dt
 
 from .directions import DIRECTIONS
 from .log import Logger
 
 class _Fill:
-    def __init__(self, orderid, ticker, pricelevel, orderfilled):
+    def __init__(self, orderid, ticker, pricelevel, orderfilled, **kwargs):
         self.OrderID = orderid
+        self.ClOrderID = orderid
+        self.ExecID = random.randint(0, 1000000)
         self.ExchangeTicker = ticker
         self.PriceLevel = float(pricelevel)
         self.OrderFilled = float(orderfilled)
         self.TransactionTime = dt.datetime.now()
+        for k,v in kwargs.items():
+            setattr(self, k, v)
 
     @property
     def headers(self):
@@ -19,6 +24,8 @@ class _Fill:
 class Fill:
     def __init__(self, fill):
         self.OrderID = fill.OrderID
+        self.ClOrderID = fill.ClOrderID
+        self.ExecID = fill.ExecID
         self.PriceLevel = fill.PriceLevel
         self.OrderFilled = fill.OrderFilled
         self.ExchangeTicker = fill.ExchangeTicker
@@ -33,8 +40,8 @@ class Fill:
         self.logger = Logger(self.__class__.__name__)
 
     @staticmethod
-    def create_from_attrs(*args):
-        return Fill(_Fill(*args))
+    def create_from_attrs(*args, **kwargs):
+        return Fill(_Fill(*args, **kwargs))
 
     @property
     def headers(self):
