@@ -1,8 +1,3 @@
-import os
-import datetime as dt
-import itertools
-import enum
-
 from .log import Logger
 from .fill import Fill
 from .directions import DIRECTIONS
@@ -85,8 +80,18 @@ class Blotter:
             if not position:
                 positions[t.OrderID] = t
             else:
+                price = ((position.PriceLevel * abs(position.OpenQuantity)) + (t.PriceLevel * abs(t.OpenQuantity))) \
+                            / (abs(position.OpenQuantity) + abs(t.OpenQuantity))
+                position.PriceLevel = price
                 position.OrderFilled += t.OrderFilled
                 position.OpenQuantity += t.OpenQuantity
+                position.BookedPartial = t.BookedPartial
+                position.Offsets += t.Offsets
+                position.UnrealPnl += t.UnrealPnl
+                position.RealPnl += t.RealPnl
+                # store the most recent ExecID, ClOrderID
+                position.ExecID = t.ExecID
+                position.ClOrderID = t.ClOrderID
         return sorted(positions.values(), key=lambda x: x.TransactionTime)
 
     def get_fifo_trade_by_direction(self, direction):
