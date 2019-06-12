@@ -1,6 +1,7 @@
 from .log import Logger
 from .fill import Fill
 from .directions import DIRECTIONS
+from .util import calc_pnl, calc_avg_open_price
 
 class Blotter:
     def __init__(self, 
@@ -69,6 +70,10 @@ class Blotter:
             raise ValueError(msg)
         self.update(fill)
 
+    def get_closed_positions(self):
+        booked = [t for t in self.trades if t.Booked]
+        return booked
+
     def get_open_positions(self):
         '''
         @returns List
@@ -103,29 +108,6 @@ class Blotter:
             if t.Direction.value == direction and not t.Booked:
                 return t
 
-    def calc_pnl(self, closing_trade, trade):
-        '''
-        closing_trade -> Fill
-        trade -> Fill
-        @returns float
-        '''
-        qty = min(abs(trade.OpenQuantity), abs(closing_trade.OpenQuantity))
-        if trade.Direction == DIRECTIONS.LONG:
-            diff = (closing_trade.PriceLevel - trade.PriceLevel)
-        else:
-            diff = (trade.PriceLevel - closing_trade.PriceLevel)
-        pnl = diff * qty * self.contract_multiplier / self.tick_size * self.tick_value
-        return pnl
-
-    def calc_avg_open_price(self, trade):
-        '''
-        trade -> Fill
-        @returns float
-        '''
-        _avg_open_price = ((self.avg_open_price * self.net_position) + (trade.PriceLevel * trade.OpenQuantity)) / \
-                           (self.net_position + trade.OpenQuantity)
-        return _avg_open_price
-
     def close_existing_positions(self, trade):
         '''
         trade -> Fill
@@ -135,7 +117,11 @@ class Blotter:
         if trade.Booked or not closing_trade:
             return
 
-        pnl = self.calc_pnl(closing_trade, trade)
+        pnl = calc_pnl(closing_trade.OpenQuantity, 
+                       closing_trade.PriceLevel, 
+                       trade.OpenQuantity, 
+                       trade.PriceLevel
+        )  * self.contract_multiplier / self.tick_size * self.tick_value
         self.realized_pnl += pnl
 
         closing_trade.book(pnl, trade)
@@ -153,7 +139,7 @@ class Blotter:
             self.close_existing_positions(fill)
                                 
         elif self.net_position:
-            self.avg_open_price = self.calc_avg_open_price(fill)
+            self.avg_open_price = calc_avg_open_price(self.net_position, self.avg_open_price, fill.OpenQuantity, fill.PriceLevel)
         else:
             self.avg_open_price = fill.PriceLevel
 

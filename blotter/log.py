@@ -1,3 +1,4 @@
+import os
 import logging
 
 FILENAME = os.getenv('LOG_LOCATION') or 'blot.log'
