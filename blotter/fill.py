@@ -2,7 +2,7 @@ import random
 import datetime as dt
 
 from .directions import DIRECTIONS
-from .log import Logger
+from .log import Logger, LOGGING_ENABLED
 
 class _Fill:
     def __init__(self, orderid, ticker, pricelevel, orderfilled, **kwargs):
@@ -98,7 +98,8 @@ class Fill:
             self.Booked = True
 
         #assert(self.OpenQuantity != 0)
-        self.logger.debug(f'\tBOOKED PARTIAL {self}')
+        if LOGGING_ENABLED:
+            self.logger.debug(f'\tBOOKED PARTIAL {self}')
 
     def _book(self, pnl, offset):
         self.Offsets.append(offset)
@@ -106,5 +107,6 @@ class Fill:
         self.BookedPartial = True
         self.OpenQuantity = 0
         self.RealPnl += pnl
-        self.logger.debug(f'\tBOOKED {self}')
+        if LOGGING_ENABLED:
+            self.logger.debug(f'\tBOOKED {self}')
 

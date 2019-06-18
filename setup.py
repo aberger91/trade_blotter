@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
    name='blotter',
-   version='1.12',
+   version='1.13',
    description='trade blotting profit and loss calculator',
    author='Andrew Berger',
    author_email='aberger91@pm.me',

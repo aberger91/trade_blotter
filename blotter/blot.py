@@ -1,4 +1,4 @@
-from .log import Logger
+from .log import Logger, LOGGING_ENABLED
 from .fill import Fill
 from .directions import DIRECTIONS
 from .util import calc_pnl, calc_avg_open_price
@@ -27,8 +27,9 @@ class Blotter:
 
     def get_logger(self):
         logger = Logger(self.__class__.__name__)
-        logger.debug(self.headers)
-        logger.info(self)
+        if LOGGING_ENABLED:
+            logger.debug(self.headers)
+            logger.info(self)
         return logger
 
     @property
@@ -66,7 +67,8 @@ class Blotter:
         '''
         if fill.ExchangeTicker != self.ticker:
             msg = f'Warning: attempt to add fill to blotter with incorrect ExchangeTicker ({fill.ExchangeTicker != self.ticker})'
-            self.logger.error(msg)
+            if LOGGING_ENABLED:
+                self.logger.error(msg)
             raise ValueError(msg)
         self.update(fill)
 
@@ -153,7 +155,8 @@ class Blotter:
             self.avg_open_price = None
 
         self.trades.append(fill)
-        self.logger.info(self)
+        if LOGGING_ENABLED:
+            self.logger.info(self)
         return self
 
     def update_from_marketdata(self, last_price):
