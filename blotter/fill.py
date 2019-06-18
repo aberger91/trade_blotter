@@ -85,7 +85,7 @@ class Fill:
         self.BookedPartial = True
 
         if abs(offset.OpenQuantity) > abs(self.OpenQuantity):
-            self.logger.warn('Warning: Partial Booking OVERFLOW')
+            #self.logger.warn('Warning: Partial Booking OVERFLOW')
             self.OpenQuantity = 0
 
         else:
@@ -94,7 +94,7 @@ class Fill:
 
         # !!!!!!!
         if self.OpenQuantity == 0:
-            self.logger.warn('Warning: Partial Booking OpenQuantity Reset ')
+            #self.logger.warn('Warning: Partial Booking OpenQuantity Reset ')
             self.Booked = True
 
         #assert(self.OpenQuantity != 0)

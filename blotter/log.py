@@ -1,18 +1,29 @@
 import os
 import logging
 
+LOGGING_ENABLED = os.getenv('LOGGING_ENABLED')=='Y' or False
+VERBOSE = os.getenv('VERBOSE')=='Y' or False
 FILENAME = os.getenv('LOG_LOCATION') or 'blot.log'
+LOG_LEVEL = os.getenv('LOG_LEVEL') or 'DEBUG'
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    datefmt='%m-%d %H:%M',
-                    filename=FILENAME,
-                    filemode='w')
-console = logging.StreamHandler()
-console.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logging.getLogger('').addHandler(console)
+if LOGGING_ENABLED:
+    try:
+        log_level = getattr(logging, LOG_LEVEL)
+    except Exception as e:
+        print('Invalid log level, defaulting to DEBUG')
+        log_level = logging.DEBUG
+
+    logging.basicConfig(level=log_level,
+                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                        datefmt='%m-%d %H:%M',
+                        filename=FILENAME,
+                        filemode='w')
+
+    if VERBOSE:  # log to console
+        console = logging.StreamHandler()
+        console.setLevel(logging.DEBUG)
+        console.setFormatter(logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s'))
+        logging.getLogger('').addHandler(console)
 
 class Logger:
     def __init__(self, name):
@@ -32,3 +43,4 @@ class Logger:
 
     def debug(self, msg):
         self.logger.debug(msg)
+
