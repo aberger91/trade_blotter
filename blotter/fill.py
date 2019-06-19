@@ -32,7 +32,9 @@ class Fill:
         self.TransactionTime = fill.TransactionTime
         #
         self.Booked = False
+        self.BookedAt = None
         self.BookedPartial = False
+        self.BookedPartialAt = None
         self.OpenQuantity = self.OrderFilled
         self.Offsets = []
         self.UnrealPnl = 0
@@ -67,7 +69,6 @@ class Fill:
                f'{self.PriceLevel}|' + \
                f'{round(self.TotalPnl, 2)}|' + \
                f'{self.TransactionTime}|'
-               #f"{'Booked' if self.Booked else 'Open'}|" + \
 
     def book(self, pnl, offset):
         if self.OpenQuantity == offset.OpenQuantity:
@@ -83,28 +84,29 @@ class Fill:
     def _book_partial(self, pnl, offset):
         self.Offsets.append(offset)
         self.BookedPartial = True
+        self.BookedPartialAt = dt.datetime.now()
 
-        if abs(offset.OpenQuantity) > abs(self.OpenQuantity):
-            #self.logger.warn('Warning: Partial Booking OVERFLOW')
+        if abs(offset.OpenQuantity) > abs(self.OpenQuantity): # !!!!!!!
+            if LOGGING_ENABLED:
+                self.logger.warn('Warning: Partial Booking OVERFLOW')
             self.OpenQuantity = 0
-
         else:
             self.OpenQuantity += offset.OpenQuantity
         self.RealPnl += pnl
-
-        # !!!!!!!
-        if self.OpenQuantity == 0:
-            #self.logger.warn('Warning: Partial Booking OpenQuantity Reset ')
+        
+        if self.OpenQuantity == 0: # !!!!!!!
+            if LOGGING_ENABLED:
+                self.logger.warn('Warning: Partial Booking OpenQuantity Reset ')
             self.Booked = True
 
-        #assert(self.OpenQuantity != 0)
         if LOGGING_ENABLED:
             self.logger.debug(f'\tBOOKED PARTIAL {self}')
 
     def _book(self, pnl, offset):
         self.Offsets.append(offset)
         self.Booked = True
-        self.BookedPartial = True
+        self.BookedAt = self.BookedPartial = True
+        self.BookedPartialAt = dt.datetime.now()
         self.OpenQuantity = 0
         self.RealPnl += pnl
         if LOGGING_ENABLED:

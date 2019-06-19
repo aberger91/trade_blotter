@@ -92,7 +92,7 @@ class Blotter:
                 position.PriceLevel = price
                 position.OrderFilled += t.OrderFilled
                 position.OpenQuantity += t.OpenQuantity
-                position.BookedPartial = t.BookedPartial
+                position.BookedPartial = int(any([t.BookedPartial for t in filter(lambda x: x.OrderID==t.OrderID, not_booked)]))
                 position.Offsets += t.Offsets
                 position.UnrealPnl += t.UnrealPnl
                 position.RealPnl += t.RealPnl

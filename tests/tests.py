@@ -179,7 +179,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_direction == DIRECTIONS.SHORT)
 
     @annotate
-    def test_new_error(self):
+    def test_new_offset_position(self):
         f = '1,ZCN19,4.005,1 \n\
 4,ZCN19,4.0025,-2 \n\
 5,ZCN19,4.005,-2 \n\
@@ -192,7 +192,7 @@ class TestBlotter(unittest.TestCase):
         assert(manager.net_direction == DIRECTIONS.FLAT)
 
     @annotate
-    def test_new_error_inverse(self):
+    def test_new_offset_position_inverse(self):
         f = '1,ZCN19,4.005,-1 \n\
 4,ZCN19,4.0025,2 \n\
 5,ZCN19,4.005,2 \n\
@@ -203,4 +203,30 @@ class TestBlotter(unittest.TestCase):
         assert(round(manager.total_pnl, 2) == pnl)
         assert(manager.net_position == 0)
         assert(manager.net_direction == DIRECTIONS.FLAT)
+
+    @annotate
+    def test_booked_partial_open_positions(self):
+        f = '1,ZCN19,4.005,2 \n\
+1,ZCN19,4.0025,2 \n\
+2,ZCN19,4.005,-1'
+        manager = initialize_from_csvstr(f)
+        #pnl = -12.5 - 25 - 12.5 + 12.5
+        #assert(round(manager.total_pnl, 2) == pnl)
+        opens = manager.get_open_positions()
+        print(opens)
+        partial = list(filter(lambda x: int(x.OrderID)==1, opens))[0]
+        assert(partial.BookedPartial == 1)
+
+    @annotate
+    def test_booked_partial_open_positions_inverse(self):
+        f = '1,ZCN19,4.005,-2 \n\
+1,ZCN19,4.0025,-2 \n\
+2,ZCN19,4.005,1'
+        manager = initialize_from_csvstr(f)
+        #pnl = -12.5 - 25 - 12.5 + 12.5
+        #assert(round(manager.total_pnl, 2) == pnl)
+        opens = manager.get_open_positions()
+        print(opens)
+        partial = list(filter(lambda x: int(x.OrderID)==1, opens))[0]
+        assert(partial.BookedPartial == 1)
 
