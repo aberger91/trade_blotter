@@ -134,7 +134,8 @@ class Blotter:
         trade -> Fill
         @returns Blotter
         '''
-        fill.logger.info(f'{fill}')
+        if LOGGING_ENABLED:
+            fill.logger.info(f'{fill}')
         is_closing_trade = self.net_position and self.net_direction != fill.Direction
 
         if is_closing_trade:
