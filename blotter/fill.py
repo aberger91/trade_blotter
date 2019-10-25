@@ -109,6 +109,7 @@ class Fill:
         self.BookedPartialAt = dt.datetime.now()
         self.OpenQuantity = 0
         self.RealPnl += pnl
+        offset.RealPnl = 0
         if LOGGING_ENABLED:
             self.logger.debug(f'\tBOOKED {self}')
 
